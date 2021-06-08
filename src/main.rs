@@ -1,23 +1,33 @@
+#[macro_use]
+extern crate diesel;
+extern crate dotenv;
+
 use lazy_static::{__Deref, lazy_static};
 use read_input::prelude::*;
+use serde::{Deserialize, Serialize};
+
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs::File;
 use std::io::{BufReader, BufWriter};
 use std::path::Path;
 use std::sync::Mutex;
-use serde::{Serialize, Deserialize};
-use sodiumoxide::crypto::pwhash::{argon2id13, HashedPassword};
 
-mod errors;
+use crate::db::models::User;
+
+mod authentication;
 mod authorization;
+mod db;
+mod errors;
+mod user_input;
+mod utils;
 
 const DATABASE_FILE: &str = "db.txt";
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 enum Role {
-    TEACHER,
-    STUDENT,
+    Teacher,
+    Student,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -40,7 +50,7 @@ impl UserInfo {
 }
 
 lazy_static! {
-    static ref DATABASE: Mutex<HashMap<String, UserInfo >> = {
+    static ref DATABASE: Mutex<HashMap<String, UserInfo>> = {
         let map = read_database_from_file(DATABASE_FILE).unwrap_or(HashMap::new());
         Mutex::new(map)
     };
@@ -61,23 +71,23 @@ fn welcome() {
 
 fn menu(user: &UserInfo) {
     match user.role {
-        Role::TEACHER => teacher_action(&user),
-        Role::STUDENT => student_action(&user)
+        Role::Teacher => teacher_action(&user),
+        Role::Student => student_action(&user),
     }
 }
 
 fn student_action(user: &UserInfo) {
-    println!("*****\n1: See your grades\n2: About\n0: Quit");
-    let choice = input().inside(0..=3).msg("Enter Your choice: ").get();
-    match choice {
-        1 => {
-            let grades = user.grades.unwrap();
-            show_grades(&grades)
-        },
-        2 => about(),
-        0 => quit(),
-        _ => panic!("impossible choice"),
-    }
+    // println!("*****\n1: See your grades\n2: About\n0: Quit");
+    // let choice = input().inside(0..=3).msg("Enter Your choice: ").get();
+    // match choice {
+    //     1 => {
+    //         let grades = user.grades.unwrap();
+    //         show_grades(&grades)
+    //     }
+    //     2 => about(),
+    //     0 => quit(),
+    //     _ => panic!("impossible choice"),
+    // }
 }
 
 fn teacher_action(user: &UserInfo) {
@@ -98,7 +108,7 @@ fn teacher_action(user: &UserInfo) {
                 }
                 None => println!("User not in system"),
             };*/
-        },
+        }
         2 => (),
         3 => about(),
         0 => quit(),
@@ -141,65 +151,49 @@ fn quit() {
     std::process::exit(0);
 }
 
-fn login() -> UserInfo {
+pub fn login() -> User {
+    println!("\nLogin:");
+
     loop {
-        let name: String = input().msg("Enter your name: ").get();
-        let pwd: String = input().msg("Enter your password: ").get();
+        let email = user_input::ask_for_email();
+        let passwd = user_input::ask_for_password();
 
-        let db = DATABASE.lock().unwrap();
-
-        match db.get(&name) {
-            Some(v) => {
-                if check_pwd(&pwd, &v.password) {
-                    return v.clone();
-                } else {
-                    println!("{}", errors::AuthError::LoginError);
-                }
-            }
-            None => {
-                hash_pwd(&pwd);
-                println!("{}", errors::AuthError::LoginError);
-            }
+        let u = authentication::login(&email, &passwd);
+        if let Err(e) = u {
+            println!("{}", e);
+            continue;
         }
+
+        return u.unwrap();
     }
 }
 
-fn check_pwd(pwd: &str, pwd_hash: &str) -> bool {
-    let hp = argon2id13::HashedPassword::from_slice(pwd_hash.as_bytes()).unwrap();
-    argon2id13::pwhash_verify(&hp, pwd.as_bytes())
-}
-
-fn hash_pwd(pwd: &str) -> String {
-    let pwh = argon2id13::pwhash(
-        pwd.as_bytes(),
-        argon2id13::OPSLIMIT_INTERACTIVE,
-        argon2id13::MEMLIMIT_INTERACTIVE,
-    )
-        .unwrap();
-
-    std::str::from_utf8(&pwh.0).unwrap().to_string()
-}
-
-// Feed the database with incredible data
-fn init() {
-    {
-        let mut map = DATABASE.lock().unwrap();
-        map.insert("doran".to_string(), UserInfo::new("doran", hash_pwd("guinessIsBetter").as_str(), Role::STUDENT, Some(Vec::new())));
-        map.insert("bastien".to_string(), UserInfo::new("bastien", hash_pwd("farmerForThePoor").as_str(), Role::STUDENT, Some(Vec::new())));
-        map.insert("alex".to_string(), UserInfo::new("alex", hash_pwd("secIsFun").as_str(), Role::TEACHER, None));
-        map.insert("rene".to_string(), UserInfo::new("rene", hash_pwd("iDontLikeStudents").as_str(), Role::TEACHER, None));
-    }
-    println!("Saving database!");
-    let file = File::create(DATABASE_FILE).unwrap();
-    let writer = BufWriter::new(file);
-    serde_json::to_writer(writer, DATABASE.lock().unwrap().deref()).unwrap();
-    std::process::exit(0);
-}
+/**
+ * Available users:
+ * Username: doran
+ * Password: guinessIsBetter
+ * Role: Student
+ *
+ * Username: bastion
+ * Password: farmerForThePoor
+ * Role: Student
+ *
+ * Username: alexandre
+ * Password: laCryptoCRigolo
+ * Role: Teacher
+ *
+ * Username: rene
+ * Password: guinessIsBetter
+ * Role: Teacher
+ */
 
 fn main() {
+    db::init();
     sodiumoxide::init().unwrap();
+
     let u = login();
-    loop {
-        menu(&u)
-    }
+    println!("{:?}", u);
+    // loop {
+    //     // menu(&u)
+    // }
 }
