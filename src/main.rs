@@ -6,6 +6,7 @@ use lazy_static::{__Deref, lazy_static};
 use read_input::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use std::str::FromStr;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs::File;
@@ -13,7 +14,9 @@ use std::io::{BufReader, BufWriter};
 use std::path::Path;
 use std::sync::Mutex;
 
-use crate::db::models::User;
+use strum_macros::EnumString;
+
+use crate::db::models::{User, Grade};
 
 mod authentication;
 mod authorization;
@@ -21,76 +24,47 @@ mod db;
 mod errors;
 mod user_input;
 mod utils;
+mod grades;
 
 const DATABASE_FILE: &str = "db.txt";
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, EnumString, Eq, PartialEq)]
 enum Role {
+    #[strum(serialize = "Teacher")]
     Teacher,
+    #[strum(serialize = "Student")]
     Student,
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-struct UserInfo {
-    username: String,
-    password: String,
-    role: Role,
-    grades: Option<Vec<f32>>,
-}
-
-impl UserInfo {
-    fn new(username: &str, password: &str, role: Role, grades: Option<Vec<f32>>) -> Self {
-        Self {
-            username: username.to_string(),
-            password: password.to_string(),
-            role,
-            grades,
-        }
-    }
-}
-
-lazy_static! {
-    static ref DATABASE: Mutex<HashMap<String, UserInfo>> = {
-        let map = read_database_from_file(DATABASE_FILE).unwrap_or(HashMap::new());
-        Mutex::new(map)
-    };
-}
-
-fn read_database_from_file<P: AsRef<Path>>(
-    path: P,
-) -> Result<HashMap<String, UserInfo>, Box<dyn Error>> {
-    let file = File::open(path)?;
-    let reader = BufReader::new(file);
-    let map = serde_json::from_reader(reader)?;
-    Ok(map)
 }
 
 fn welcome() {
     println!("Welcome to KING: KING Is Not GAPS");
 }
 
-fn menu(user: &UserInfo) {
-    match user.role {
+fn menu(user: &User) {
+    match Role::from_str(user.role.as_str()).unwrap() {
         Role::Teacher => teacher_action(&user),
         Role::Student => student_action(&user),
     }
 }
 
-fn student_action(user: &UserInfo) {
-    // println!("*****\n1: See your grades\n2: About\n0: Quit");
-    // let choice = input().inside(0..=3).msg("Enter Your choice: ").get();
-    // match choice {
-    //     1 => {
-    //         let grades = user.grades.unwrap();
-    //         show_grades(&grades)
-    //     }
-    //     2 => about(),
-    //     0 => quit(),
-    //     _ => panic!("impossible choice"),
-    // }
+fn student_action(user: &User) {
+    println!("*****\n1: See your grades\n2: About\n0: Quit");
+    let choice = input().inside(0..=3).msg("Enter Your choice: ").get();
+    match choice {
+         1 => {
+             let grades = grades::get_grades(user.id);
+             match grades {
+                 Ok(v) => show_grades(&v),
+                 Err(e) => println!("{}", e)
+             }
+         },
+         2 => about(),
+         0 => quit(),
+         _ => panic!("impossible choice"),
+     }
 }
 
-fn teacher_action(user: &UserInfo) {
+fn teacher_action(user: &User) {
     println!("*****\n1: See grades of student\n2: Enter grades\n3 About\n0: Quit");
     let choice = input().inside(0..=3).msg("Enter Your choice: ").get();
     match choice {
@@ -116,11 +90,12 @@ fn teacher_action(user: &UserInfo) {
     }
 }
 
-fn show_grades(grades: &Vec<f32>) {
+fn show_grades(grades: &Vec<Grade>) {
+    let sum = grades.iter().fold(0.0f32, |acc, g| acc + g.grade);
     println!("{:?}", grades);
     println!(
         "The average is {}",
-        (grades.iter().sum::<f32>()) / ((*grades).len() as f32)
+        sum / ((*grades).len() as f32)
     );
 }
 
@@ -144,10 +119,6 @@ fn about() {
 }
 
 fn quit() {
-    println!("Saving database!");
-    let file = File::create(DATABASE_FILE).unwrap();
-    let writer = BufWriter::new(file);
-    serde_json::to_writer(writer, DATABASE.lock().unwrap().deref()).unwrap();
     std::process::exit(0);
 }
 
@@ -174,7 +145,7 @@ pub fn login() -> User {
  * Password: guinessIsBetter
  * Role: Student
  *
- * Username: bastion
+ * Username: bastien
  * Password: farmerForThePoor
  * Role: Student
  *
@@ -183,7 +154,7 @@ pub fn login() -> User {
  * Role: Teacher
  *
  * Username: rene
- * Password: guinessIsBetter
+ * Password: iDontLikeStudents
  * Role: Teacher
  */
 
@@ -192,7 +163,10 @@ fn main() {
     sodiumoxide::init().unwrap();
 
     let u = login();
-    println!("{:?}", u);
+
+    loop {
+        menu(&u)
+    }
     // loop {
     //     // menu(&u)
     // }
