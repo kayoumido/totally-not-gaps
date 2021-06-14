@@ -52,17 +52,17 @@ fn student_action(user: &User) {
     println!("*****\n1: See your grades\n2: About\n0: Quit");
     let choice = input().inside(0..=3).msg("Enter Your choice: ").get();
     match choice {
-         1 => {
-             let grades = grades::get_grades(user.id);
-             match grades {
-                 Ok(v) => show_grades(&v),
-                 Err(e) => println!("{}", e)
-             }
-         },
-         2 => about(),
-         0 => quit(),
-         _ => panic!("impossible choice"),
-     }
+        1 => {
+            let grades = grades::get_grades(user.id);
+            match grades {
+                Ok(v) => show_grades(&v),
+                Err(e) => println!("{}", e)
+            }
+        }
+        2 => about(),
+        0 => quit(),
+        _ => panic!("impossible choice"),
+    }
 }
 
 fn teacher_action(user: &User) {
@@ -84,7 +84,7 @@ fn teacher_action(user: &User) {
                 Err(e) => println!("{}", e),
             };
         }
-        2 => (),
+        2 => enter_grade(),
         3 => about(),
         0 => quit(),
         _ => panic!("impossible choice"),
@@ -100,20 +100,20 @@ fn show_grades(grades: &Vec<Grade>) {
     );
 }
 
-/*
 fn enter_grade() {
     println!("What is the name of the student?");
     let name: String = input().get();
-    println!("What is the new grade of the student?");
-    let grade: f32 = input().add_test(|x| *x >= 0.0 && *x <= 6.0).get();
-    let mut map = DATABASE.lock().unwrap();
-    match map.get_mut(&name) {
-        Some(v) => v.push(grade),
-        None => {
-            ()
+    let u = users::get_student(&name);
+
+    match u {
+        Ok(student) => {
+            println!("What is the new grade of the student?");
+            let grade: f32 = input().add_test(|x| *x >= 0.0 && *x <= 6.0).get();
+            let id_grade_inserted = grades::insert_grade(student.id, grade);
         }
-    };
-}*/
+        Err(e) => println!("{}", e)
+    }
+}
 
 fn about() {
     panic!("The requested URL was not found on this server.");

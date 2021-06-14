@@ -1,12 +1,25 @@
 use crate::db::models::Grade;
-use crate::db::repository::{PostgrSQLUserRepository, UserRepository};
+use crate::db::repository::{PostgrSQLUserRepository, UserRepository, GradeRepository};
 use crate::errors::UserError;
 use std::str::FromStr;
 use crate::Role;
 
+pub fn insert_grade(user_id: i32, grade: f32) -> Result<i32, UserError> {
+    let repository = PostgrSQLUserRepository {};
+    _insert_grade(user_id, grade, &repository)
+}
+
 pub fn get_grades(user_id: i32) -> Result<Vec<Grade>, UserError> {
     let repository = PostgrSQLUserRepository {};
     _get_grades(user_id, &repository)
+}
+
+fn _insert_grade(user_id: i32, grade: f32, repository: &dyn GradeRepository) -> Result<i32, UserError> {
+    let r = repository.insert_grade(user_id, grade);
+
+    let r = r.unwrap();
+
+    Ok(4)
 }
 
 fn _get_grades(user_id: i32, repository: &dyn UserRepository) -> Result<Vec<Grade>, UserError> {

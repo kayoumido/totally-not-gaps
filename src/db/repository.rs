@@ -7,6 +7,17 @@ use crate::errors::DBError;
 
 use diesel::{insert_into, prelude::*};
 
+pub trait GradeRepository {
+    /// Insert a grade to the user_id
+    /// Checks if user associated to the id is a student
+    ///
+    /// # Arguments
+    ///
+    /// * `user_id` - id of the user
+    /// * `grade` - new grade added to the user
+    fn insert_grade(&self, user_id: i32, grade: f32) -> Result<i32, DBError>;
+}
+
 pub trait UserRepository {
     /// Try and get a user from the storage
     /// if the wanted user doesn't exist, an error is returned
@@ -36,6 +47,25 @@ pub trait UserRepository {
 }
 
 pub struct PostgrSQLUserRepository {}
+
+impl GradeRepository for PostgrSQLUserRepository {
+    fn insert_grade(&self, user_id: i32, grade: f32) -> Result<i32, DBError> {
+        let conn = connection()?;
+
+        let new_grade = NewGrade {
+            grade,
+            student_id: user_id
+        };
+
+        let res = diesel::insert_into(grades)
+            .values(&new_grade)
+            .execute(&conn);
+
+        // TODO : changer le résultat
+
+        Ok(1)
+    }
+}
 
 /// Implementation of the `UserRepository` with PostgreSQL as a storage
 impl UserRepository for PostgrSQLUserRepository {
