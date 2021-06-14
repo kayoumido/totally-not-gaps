@@ -218,11 +218,13 @@ dependencies = [
  "diesel",
  "dotenv",
  "lazy_static",
+ "log",
  "r2d2",
  "read_input",
  "regex",
  "serde",
  "serde_json",
+ "simple_logger",
  "sodiumoxide",
  "strum",
  "strum_macros",
@@ -270,6 +272,17 @@ dependencies = [
  "num-integer",
  "num-traits",
  "time",
+ "winapi",
+]
+
+[[package]]
+name = "colored"
+version = "1.9.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f4ffc801dacf156c5854b9df4f425a626539c3a6ef7893cc0c5084a23f0b6c59"
+dependencies = [
+ "atty",
+ "lazy_static",
  "winapi",
 ]
 
@@ -852,6 +865,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e51e73328dc4ac0c7ccbda3a494dfa03df1de2f46018127f60c693f2648455b0"
 dependencies = [
  "libc",
+]
+
+[[package]]
+name = "simple_logger"
+version = "1.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cd57f17c093ead1d4a1499dc9acaafdd71240908d64775465543b8d9a9f1d198"
+dependencies = [
+ "atty",
+ "chrono",
+ "colored",
+ "log",
+ "winapi",
 ]
 
 [[package]]
