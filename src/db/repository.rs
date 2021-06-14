@@ -15,7 +15,7 @@ pub trait GradeRepository {
     ///
     /// * `user_id` - id of the user
     /// * `grade` - new grade added to the user
-    fn insert_grade(&self, user_id: i32, grade: f32) -> Result<i32, DBError>;
+    fn insert_grade(&self, user_id: i32, grade: f32) -> Result<(), DBError>;
 }
 
 pub trait UserRepository {
@@ -49,7 +49,7 @@ pub trait UserRepository {
 pub struct PostgrSQLUserRepository {}
 
 impl GradeRepository for PostgrSQLUserRepository {
-    fn insert_grade(&self, user_id: i32, grade: f32) -> Result<i32, DBError> {
+    fn insert_grade(&self, user_id: i32, grade: f32) -> Result<(), DBError> {
         let conn = connection()?;
 
         let new_grade = NewGrade {
@@ -57,13 +57,17 @@ impl GradeRepository for PostgrSQLUserRepository {
             student_id: user_id
         };
 
-        let res = diesel::insert_into(grades)
+        let nb_rows_inserted = diesel::insert_into(grades)
             .values(&new_grade)
             .execute(&conn);
 
-        // TODO : changer le résultat
+        let nb_rows_inserted = nb_rows_inserted.unwrap();
 
-        Ok(1)
+        if nb_rows_inserted > 0 {
+            Ok(())
+        } else {
+            Err(DBError::FailToInsertGrade)
+        }
     }
 }
 

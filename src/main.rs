@@ -109,7 +109,10 @@ fn enter_grade() {
         Ok(student) => {
             println!("What is the new grade of the student?");
             let grade: f32 = input().add_test(|x| *x >= 0.0 && *x <= 6.0).get();
-            let id_grade_inserted = grades::insert_grade(student.id, grade);
+            let result_insertion = grades::insert_grade(student.id, grade);
+            if let Err(e) = result_insertion {
+                println!("{}", e)
+            }
         }
         Err(e) => println!("{}", e)
     }

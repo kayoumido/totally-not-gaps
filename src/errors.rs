@@ -35,10 +35,12 @@ impl error::Error for AuthError {
 
 #[derive(PartialEq, Debug, strum_macros::EnumMessage)]
 pub enum UserError {
-    #[strum(message = "Student not found")]
+    #[strum(message = "Student not found.")]
     StudentNotFound,
     #[strum(message = "A teacher can't have grades.")]
-    TeacherCantHaveGrades
+    TeacherCantHaveGrades,
+    #[strum(message = "The try of inserting a grade has failed.")]
+    FailedToInsertGrade,
 }
 
 impl fmt::Display for UserError {
@@ -54,14 +56,16 @@ impl error::Error for UserError {
 }
 
 
-
 #[derive(PartialEq, Debug, strum_macros::EnumMessage)]
 pub enum DBError {
     #[strum(message = "Failed getting db connection")]
     ConnectionFailed,
 
-    #[strum(message = "user not found")]
+    #[strum(message = "User not found")]
     UserNotFound,
+
+    #[strum(message = "Failed to insert grade")]
+    FailToInsertGrade,
 }
 
 impl fmt::Display for DBError {
