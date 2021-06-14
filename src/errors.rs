@@ -35,7 +35,7 @@ impl error::Error for AuthError {
 
 #[derive(PartialEq, Debug, strum_macros::EnumMessage)]
 pub enum UserError {
-    #[strum(message = "Your login details are incorrect.")]
+    #[strum(message = "Student not found")]
     StudentNotFound,
     #[strum(message = "A teacher can't have grades.")]
     TeacherCantHaveGrades

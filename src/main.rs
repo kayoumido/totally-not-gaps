@@ -25,6 +25,7 @@ mod errors;
 mod user_input;
 mod utils;
 mod grades;
+mod users;
 
 const DATABASE_FILE: &str = "db.txt";
 
@@ -69,19 +70,19 @@ fn teacher_action(user: &User) {
     let choice = input().inside(0..=3).msg("Enter Your choice: ").get();
     match choice {
         1 => {
-            /*
             let name: String = input().msg("Enter the name of the student which you want to see the grades: ").get();
             println!("Here are the grades of user {}", name);
-            let db = DATABASE.lock().unwrap();
-            match db.get(&name) {
-                Some(student) => {
-                    match &student.grades {
-                        Some(v) => show_grades(&v),
-                        None => println!("User isn't a student")
+            let u = users::get_student(&name);
+            match u {
+                Ok(student) => {
+                    let grades = grades::get_grades(student.id);
+                    match grades {
+                        Ok(v) => show_grades(&v),
+                        Err(e) => println!("{}", e)
                     }
                 }
-                None => println!("User not in system"),
-            };*/
+                Err(e) => println!("{}", e),
+            };
         }
         2 => (),
         3 => about(),
