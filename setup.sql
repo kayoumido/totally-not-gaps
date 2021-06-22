@@ -28,7 +28,7 @@ insert into users (username, password, role) values (
 );
 
 insert into users (username, password, role) values (
-    'alexendre', 
+    'alexandre', 
     '$argon2id$v=19$m=65536,t=2,p=1$fYVO/iOOriQroW7PfADQPQ$9uJNYqxJ7Fgd27GHrAJNCu/PbwsBv3DOG1it78LSVmA', 
     'Teacher'
 );
