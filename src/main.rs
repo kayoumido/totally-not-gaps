@@ -2,34 +2,26 @@
 extern crate diesel;
 extern crate dotenv;
 
-use lazy_static::{__Deref, lazy_static};
+use std::str::FromStr;
+
+use futures::executor::block_on;
+use log::{error, info, warn};
 use read_input::prelude::*;
 use serde::{Deserialize, Serialize};
-
-use std::str::FromStr;
-use std::collections::HashMap;
-use std::error::Error;
-use std::fs::File;
-use std::io::{BufReader, BufWriter};
-use std::path::Path;
-use std::sync::Mutex;
-
+use simple_logger::SimpleLogger;
 use strum_macros::EnumString;
 
-use crate::db::models::{User, Grade};
-use log::{debug, error, info, warn};
-use simple_logger::SimpleLogger;
+use crate::authorization::auth;
+use crate::db::models::User;
 
 mod authentication;
 mod authorization;
 mod db;
 mod errors;
-mod user_input;
-mod utils;
 mod grades;
+mod user_input;
 mod users;
-
-const DATABASE_FILE: &str = "db.txt";
+mod utils;
 
 #[derive(Serialize, Deserialize, Debug, Clone, EnumString, Eq, PartialEq)]
 enum Role {
@@ -56,14 +48,7 @@ fn student_action(user: &User) {
     match choice {
         1 => {
             info!("{} tried to see his grades", user.username);
-            let grades = grades::get_grades(user.id);
-            match grades {
-                Ok(v) => show_grades(&v),
-                Err(e) => {
-                    println!("{}", e);
-                    error!("An error has occured")
-                }
-            }
+            see_grades(user, &user.username);
         }
         2 => about(),
         0 => quit(),
@@ -76,19 +61,12 @@ fn teacher_action(user: &User) {
     let choice = input().inside(0..=3).msg("Enter Your choice: ").get();
     match choice {
         1 => {
-            let name: String = input().msg("Enter the name of the student which you want to see the grades: ").get();
-            println!("Here are the grades of user {}", name);
-            let u = users::get_student(&name);
-            match u {
-                Ok(student) => {
-                    let grades = grades::get_grades(student.id);
-                    match grades {
-                        Ok(v) => show_grades(&v),
-                        Err(e) => println!("{}", e)
-                    }
-                }
-                Err(e) => println!("{}", e),
-            };
+            let name: String = input()
+                .msg("Enter the name of the student which you want to see the grades: ")
+                .get();
+
+            info!("{} is viewing {}' grades", user.username, name);
+            see_grades(user, &name);
         }
         2 => enter_grade(),
         3 => about(),
@@ -97,13 +75,57 @@ fn teacher_action(user: &User) {
     }
 }
 
-fn show_grades(grades: &Vec<Grade>) {
-    let sum = grades.iter().fold(0.0f32, |acc, g| acc + g.grade);
-    println!("{:?}", grades);
-    println!(
-        "The average is {}",
-        sum / ((*grades).len() as f32)
-    );
+fn see_grades(requester: &User, requestee: &str) {
+    if !block_on(auth(&requester.username, "grades", "read")) {
+        println!("Unauthorized access!");
+        warn!(
+            "Unauthorized access - {} tried to access {}' grades",
+            requester.username, requestee
+        );
+        return;
+    }
+
+    // make sure that we don't have a student trying to access another student' grade
+    if Role::from_str(requester.role.as_str()).unwrap() == Role::Student
+        && requester.username != requestee
+    {
+        println!("You can not view another students grades!");
+
+        warn!(
+            "{} tried to access {}' grades with the Student role",
+            requester.username, requestee
+        );
+    }
+
+    println!("Here are the grades of user {}", requestee);
+    match users::get_student(&requestee) {
+        Ok(student) => match grades::get_grades(student.id) {
+            Ok(grades) => {
+                if grades.is_empty() {
+                    println!("{} does not have any grades yet", requestee);
+                    return;
+                }
+
+                let sum = grades.iter().fold(0.0f32, |acc, g| acc + g.grade);
+                println!("{:?}", grades);
+                println!("The average is {}", sum / ((*grades).len() as f32));
+            }
+            Err(e) => {
+                warn!(
+                    "{} tried to acces grades of a non-existing student or a teacher ({})",
+                    requester.username, requestee
+                );
+                println!("{}", e)
+            }
+        },
+        Err(e) => {
+            println!("{}", e);
+            warn!(
+                "{} tried to acces grades of a non-existing student ({})",
+                requester.username, requestee
+            );
+        }
+    };
 }
 
 fn enter_grade() {
@@ -123,7 +145,7 @@ fn enter_grade() {
         }
         Err(e) => {
             println!("{}", e);
-            warn!("The name of the student {} is incorrect");
+            warn!("The name of the student {} is incorrect", name);
         }
     }
 }
@@ -182,6 +204,7 @@ fn main() {
     SimpleLogger::new().init().unwrap();
     sodiumoxide::init().unwrap();
 
+    welcome();
     let u = login();
 
     loop {
