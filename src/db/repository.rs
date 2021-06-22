@@ -1,22 +1,11 @@
 use super::connection;
 use super::models::*;
+use super::schema::grades::dsl::{grades, student_id};
 use super::schema::users::dsl::*;
-use super::schema::grades::dsl::{student_id, grades};
 
 use crate::errors::DBError;
 
 use diesel::{insert_into, prelude::*};
-
-pub trait GradeRepository {
-    /// Insert a grade to the user_id
-    /// Checks if user associated to the id is a student
-    ///
-    /// # Arguments
-    ///
-    /// * `user_id` - id of the user
-    /// * `grade` - new grade added to the user
-    fn insert_grade(&self, user_id: i32, grade: f32) -> Result<(), DBError>;
-}
 
 pub trait UserRepository {
     /// Try and get a user from the storage
@@ -47,29 +36,6 @@ pub trait UserRepository {
 }
 
 pub struct PostgrSQLUserRepository {}
-
-impl GradeRepository for PostgrSQLUserRepository {
-    fn insert_grade(&self, user_id: i32, grade: f32) -> Result<(), DBError> {
-        let conn = connection()?;
-
-        let new_grade = NewGrade {
-            grade,
-            student_id: user_id
-        };
-
-        let nb_rows_inserted = diesel::insert_into(grades)
-            .values(&new_grade)
-            .execute(&conn);
-
-        let nb_rows_inserted = nb_rows_inserted.unwrap();
-
-        if nb_rows_inserted > 0 {
-            Ok(())
-        } else {
-            Err(DBError::FailToInsertGrade)
-        }
-    }
-}
 
 /// Implementation of the `UserRepository` with PostgreSQL as a storage
 impl UserRepository for PostgrSQLUserRepository {
@@ -106,6 +72,42 @@ impl UserRepository for PostgrSQLUserRepository {
             Err(DBError::UserNotFound)
         } else {
             Ok(res.unwrap())
+        }
+    }
+}
+
+pub trait GradeRepository {
+    /// Insert a grade to the user_id
+    /// Checks if user associated to the id is a student
+    ///
+    /// # Arguments
+    ///
+    /// * `user_id` - id of the user
+    /// * `grade` - new grade added to the user
+    fn insert_grade(&self, user_id: i32, grade: f32) -> Result<(), DBError>;
+}
+
+pub struct PostgrSQLGradeRepository {}
+
+impl GradeRepository for PostgrSQLGradeRepository {
+    fn insert_grade(&self, user_id: i32, grade: f32) -> Result<(), DBError> {
+        let conn = connection()?;
+
+        let new_grade = NewGrade {
+            grade,
+            student_id: user_id,
+        };
+
+        let nb_rows_inserted = diesel::insert_into(grades)
+            .values(&new_grade)
+            .execute(&conn);
+
+        let nb_rows_inserted = nb_rows_inserted.unwrap();
+
+        if nb_rows_inserted > 0 {
+            Ok(())
+        } else {
+            Err(DBError::FailToInsertGrade)
         }
     }
 }
