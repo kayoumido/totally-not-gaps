@@ -12,14 +12,14 @@ pub fn get_student(username: &str) -> Result<User, UserError> {
 fn _get_student(username: &str, repository: &dyn UserRepository) -> Result<User, UserError> {
     let u = repository.get_user(username);
 
-    if let Err(e) = u {
-        return Err(UserError::StudentNotFound)
+    if let Err(_) = u {
+        return Err(UserError::StudentNotFound);
     }
 
     let u = u.unwrap();
 
     if Role::from_str(&u.role).unwrap() == Role::Teacher {
-        return Err(UserError::StudentNotFound)
+        return Err(UserError::StudentNotFound);
     }
 
     Ok(u)
