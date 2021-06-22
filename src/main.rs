@@ -136,15 +136,15 @@ fn enter_grade(teacher: &str) {
         return;
     }
 
-    println!("What is the name of the student?");
-
-    let name: String = input().get();
+    let name: String = input().msg("What is the name of the student? ").get();
     info!("{} is entering a garde for {}", teacher, name);
 
     match users::get_student(&name) {
         Ok(student) => {
-            println!("What is the new grade of the student?");
-            let grade: f32 = input().add_test(|x| *x >= 0.0 && *x <= 6.0).get();
+            let grade: f32 = input()
+                .repeat_msg("What is the new grade of the student? ")
+                .add_test(|x| *x >= 0.0 && *x <= 6.0)
+                .get();
             if let Err(e) = grades::insert_grade(student.id, grade) {
                 println!("{}", e);
                 error!("The insertion of the new student has failed");
