@@ -5,6 +5,7 @@ extern crate dotenv;
 use std::str::FromStr;
 
 use futures::executor::block_on;
+use log::LevelFilter;
 use log::{error, info, warn};
 use read_input::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -68,7 +69,7 @@ fn teacher_action(user: &User) {
             info!("{} is viewing {}' grades", user.username, name);
             see_grades(user, &name);
         }
-        2 => enter_grade(),
+        2 => enter_grade(&user.username),
         3 => about(),
         0 => quit(),
         _ => panic!("impossible choice"),
@@ -128,17 +129,23 @@ fn see_grades(requester: &User, requestee: &str) {
     };
 }
 
-fn enter_grade() {
-    println!("What is the name of the student?");
-    let name: String = input().get();
-    let u = users::get_student(&name);
+fn enter_grade(teacher: &str) {
+    if !block_on(auth(teacher, "grades", "write")) {
+        println!("Unauthorized access!");
+        warn!("Unauthorized access - {} tried to enter grades", teacher);
+        return;
+    }
 
-    match u {
+    println!("What is the name of the student?");
+
+    let name: String = input().get();
+    info!("{} is entering a garde for {}", teacher, name);
+
+    match users::get_student(&name) {
         Ok(student) => {
             println!("What is the new grade of the student?");
             let grade: f32 = input().add_test(|x| *x >= 0.0 && *x <= 6.0).get();
-            let result_insertion = grades::insert_grade(student.id, grade);
-            if let Err(e) = result_insertion {
+            if let Err(e) = grades::insert_grade(student.id, grade) {
                 println!("{}", e);
                 error!("The insertion of the new student has failed");
             }
@@ -155,6 +162,7 @@ fn about() {
 }
 
 fn quit() {
+    info!("Goodbye!");
     std::process::exit(0);
 }
 
@@ -201,11 +209,16 @@ pub fn login() -> User {
 
 fn main() {
     db::init();
-    SimpleLogger::new().init().unwrap();
+    SimpleLogger::new()
+        .with_level(LevelFilter::Info)
+        .init()
+        .unwrap();
     sodiumoxide::init().unwrap();
 
     welcome();
     let u = login();
+
+    enter_grade(&u.username);
 
     loop {
         menu(&u)
