@@ -1,5 +1,8 @@
 g, rene, teacher
-g, alexendre, teacher
+g, alexandre, teacher
+g, doran, student
+g, bastien, student
+g, teacher, student
 
-p, teacher, grades, read
+p, student, grades, read
 p, teacher, grades, write
