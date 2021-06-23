@@ -5,7 +5,7 @@ use super::schema::users::dsl::*;
 
 use crate::errors::DBError;
 
-use diesel::{insert_into, prelude::*};
+use diesel::prelude::*;
 
 pub trait UserRepository {
     /// Try and get a user from the storage
