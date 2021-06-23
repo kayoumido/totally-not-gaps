@@ -47,10 +47,7 @@ fn student_action(user: &User) {
     println!("*****\n1: See your grades\n2: About\n0: Quit");
     let choice = input().inside(0..=3).msg("Enter Your choice: ").get();
     match choice {
-        1 => {
-            info!("{} tried to see his grades", user.username);
-            see_grades(user, &user.username);
-        }
+        1 => see_grades(user, &user.username),
         2 => about(),
         0 => quit(),
         _ => panic!("impossible choice"),
@@ -66,7 +63,6 @@ fn teacher_action(user: &User) {
                 .msg("Enter the name of the student which you want to see the grades: ")
                 .get();
 
-            info!("{} is viewing {}' grades", user.username, name);
             see_grades(user, &name);
         }
         2 => enter_grade(&user.username),
@@ -80,7 +76,7 @@ fn see_grades(requester: &User, requestee: &str) {
     if !block_on(auth(&requester.username, "grades", "read")) {
         println!("Unauthorized access!");
         warn!(
-            "Unauthorized access - {} tried to access {}' grades",
+            "main (see_grades) - Unauthorized access - {} tried to access {}' grades",
             requester.username, requestee
         );
         return;
@@ -93,10 +89,15 @@ fn see_grades(requester: &User, requestee: &str) {
         println!("You can not view another students grades!");
 
         warn!(
-            "{} tried to access {}' grades with the Student role",
+            "main (see_grades) - {} tried to access {}' grades with the Student role",
             requester.username, requestee
         );
     }
+
+    info!(
+        "main (see_grades) - {} is viewing {}' grades",
+        requester.username, requestee
+    );
 
     println!("Here are the grades of user {}", requestee);
     match users::get_student(&requestee) {
@@ -113,18 +114,18 @@ fn see_grades(requester: &User, requestee: &str) {
             }
             Err(e) => {
                 warn!(
-                    "{} tried to acces grades of a non-existing student or a teacher ({})",
+                    "main (see_grades) - {} tried to acces grades of a non-existing student or a teacher ({})",
                     requester.username, requestee
                 );
                 println!("{}", e)
             }
         },
         Err(e) => {
-            println!("{}", e);
             warn!(
-                "{} tried to acces grades of a non-existing student ({})",
+                "main (see_grades) - {} tried to acces grades of a non-existing student ({})",
                 requester.username, requestee
             );
+            println!("{}", e);
         }
     };
 }
@@ -132,12 +133,18 @@ fn see_grades(requester: &User, requestee: &str) {
 fn enter_grade(teacher: &str) {
     if !block_on(auth(teacher, "grades", "write")) {
         println!("Unauthorized access!");
-        warn!("Unauthorized access - {} tried to enter grades", teacher);
+        warn!(
+            "main (enter_grade) - Unauthorized access - {} tried to enter grades",
+            teacher
+        );
         return;
     }
 
     let name: String = input().msg("What is the name of the student? ").get();
-    info!("{} is entering a garde for {}", teacher, name);
+    info!(
+        "main (enter_grade) - {} is entering a garde for {}",
+        teacher, name
+    );
 
     match users::get_student(&name) {
         Ok(student) => {
@@ -145,20 +152,22 @@ fn enter_grade(teacher: &str) {
                 .repeat_msg("What is the new grade of the student? ")
                 .add_test(|x| *x >= 0.0 && *x <= 6.0)
                 .get();
+
             if let Err(e) = grades::insert_grade(student.id, grade) {
                 println!("{}", e);
-                error!("The insertion of the new student has failed");
+                error!(
+                    "main (enter_grade) - {} tried to insert the grade {} for {}",
+                    teacher, grade, name
+                );
             }
         }
-        Err(e) => {
-            println!("{}", e);
-            warn!("The name of the student {} is incorrect", name);
-        }
+        Err(e) => println!("{}", e),
     }
 }
 
 fn about() {
-    panic!("The requested URL was not found on this server.");
+    println!("The about page is still under construction.");
+    println!("But what we can say is that KING Is Not GAPS");
 }
 
 fn quit() {
@@ -177,12 +186,12 @@ pub fn login() -> User {
         if let Err(e) = u {
             println!("{}", e);
 
-            warn!("{} tried to log in", email);
+            warn!("main (login) - {} tried to log in", email);
 
             continue;
         }
 
-        info!("{} has successfully logged in", email);
+        info!("main (login) - {} has successfully logged in", email);
 
         return u.unwrap();
     }
@@ -217,8 +226,6 @@ fn main() {
 
     welcome();
     let u = login();
-
-    enter_grade(&u.username);
 
     loop {
         menu(&u)

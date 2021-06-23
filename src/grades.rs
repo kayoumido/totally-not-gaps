@@ -1,10 +1,11 @@
+use std::str::FromStr;
+
 use crate::db::models::Grade;
 use crate::db::repository::{
     GradeRepository, PostgrSQLGradeRepository, PostgrSQLUserRepository, UserRepository,
 };
 use crate::errors::UserError;
 use crate::Role;
-use std::str::FromStr;
 
 pub fn insert_grade(user_id: i32, grade: f32) -> Result<(), UserError> {
     let repository = PostgrSQLGradeRepository {};

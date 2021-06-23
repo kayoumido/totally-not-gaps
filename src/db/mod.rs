@@ -13,6 +13,7 @@ use diesel::pg::PgConnection;
 use diesel::r2d2::ConnectionManager;
 use dotenv::dotenv;
 use lazy_static::lazy_static;
+use log::error;
 use r2d2;
 use std::env;
 
@@ -34,7 +35,11 @@ lazy_static! {
 
 pub fn init() {
     lazy_static::initialize(&POOL);
-    let _conn = connection().expect("Failed to get db connection");
+
+    match connection() {
+        Ok(_) => (),
+        Err(e) => error!("DB (init) - {}", e),
+    }
 }
 
 pub fn connection() -> Result<DBConnection, DBError> {
