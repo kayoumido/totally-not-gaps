@@ -41,7 +41,7 @@ pub fn verify_hash(hash: &str, passwd: &str) -> bool {
 }
 
 fn pad_hash(hash: &str) -> Vec<u8> {
-    let mut padded = [0u8; 128];
+    let mut padded = [0u8; argon2id13::HASHEDPASSWORDBYTES];
     hash.as_bytes().iter().enumerate().for_each(|(i, val)| {
         padded[i] = val.clone();
     });
@@ -68,5 +68,28 @@ mod test {
         assert_ne!(pwh2, pwh22);
 
         assert_ne!(pwh1, pwh2);
+    }
+
+    #[test]
+    fn test_verify_hash() {
+        let pw1 = "passwd";
+        let pw2 = "verySecurePassword";
+
+        let pwh1 = hash(pw1);
+        let pwh2 = hash(pw2);
+
+        assert_eq!(verify_hash(&pwh1, pw1), true);
+        assert_eq!(verify_hash(&pwh2, pw2), true);
+
+        assert_eq!(verify_hash(&pwh1, pw2), true);
+        assert_eq!(verify_hash(&pwh2, pw1), true);
+    }
+
+    #[test]
+    fn test_pad_hash() {
+        let hash = "$argon2id$v=19$m=65536,t=2,p=1$bir6dVhkHcJxiiXkWq4qjA$ON44zHno26tU7vYN4IbZ/Ifca37MArcvdZZl9iO0OSc";
+
+        assert_ne!(hash.len(), argon2id13::HASHEDPASSWORDBYTES);
+        assert_eq!(pad_hash(hash).len(), argon2id13::HASHEDPASSWORDBYTES);
     }
 }
