@@ -81,8 +81,8 @@ mod test {
         assert_eq!(verify_hash(&pwh1, pw1), true);
         assert_eq!(verify_hash(&pwh2, pw2), true);
 
-        assert_eq!(verify_hash(&pwh1, pw2), true);
-        assert_eq!(verify_hash(&pwh2, pw1), true);
+        assert_eq!(verify_hash(&pwh1, pw2), false);
+        assert_eq!(verify_hash(&pwh2, pw1), false);
     }
 
     #[test]

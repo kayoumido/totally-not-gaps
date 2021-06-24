@@ -20,7 +20,7 @@ impl User {
     }
 }
 
-#[derive(Queryable, Debug, Associations)]
+#[derive(Queryable, Debug, Associations, PartialEq)]
 #[belongs_to(User foreign_key = "student_id")]
 pub struct Grade {
     pub id: i32,

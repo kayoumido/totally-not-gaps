@@ -49,3 +49,118 @@ fn _get_grades(user_id: i32, repository: &dyn UserRepository) -> Result<Vec<Grad
         Err(_) => Ok(Vec::new()),
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::db::models::{Grade, User};
+    use crate::db::repository::{MockPostgrSQLGradeRepository, MockPostgrSQLUserRepository};
+    use crate::errors::{DBError, UserError};
+    use crate::utils;
+
+    #[test]
+    fn test_failed_grade_insert() {
+        let mut mock = MockPostgrSQLGradeRepository::new();
+
+        mock.expect_insert_grade()
+            .returning(|_, _| Err(DBError::FailToInsertGrade));
+
+        let res = _insert_grade(5, 6.0, &mock);
+
+        assert_eq!(Err(UserError::FailedToInsertGrade), res);
+    }
+
+    #[test]
+    fn test_succesfull_grade_insert() {
+        let mut mock = MockPostgrSQLGradeRepository::new();
+
+        mock.expect_insert_grade().returning(|_, _| Ok(()));
+
+        let res = _insert_grade(1, 6.0, &mock);
+
+        assert_eq!(Ok(()), res);
+    }
+
+    #[test]
+    fn test_get_grade_with_unknown_user() {
+        let mut mock = MockPostgrSQLUserRepository::new();
+
+        mock.expect_get_user_by_id()
+            .returning(|_| Err(DBError::UserNotFound));
+
+        let res = _get_grades(1, &mock);
+
+        assert_eq!(Err(UserError::StudentNotFound), res);
+    }
+
+    #[test]
+    fn test_get_grade_with_teacher() {
+        let mut mock = MockPostgrSQLUserRepository::new();
+
+        let passwd = utils::hash("password");
+        mock.expect_get_user_by_id()
+            .returning(move |_| Ok(User::new("bob", &passwd, "Teacher")));
+
+        let res = _get_grades(1, &mock);
+
+        assert_eq!(Err(UserError::TeacherCantHaveGrades), res);
+    }
+
+    #[test]
+    fn test_get_grade_with_student_without_grades() {
+        let mut mock = MockPostgrSQLUserRepository::new();
+
+        let passwd = utils::hash("password");
+        mock.expect_get_user_by_id()
+            .returning(move |_| Ok(User::new("bob", &passwd, "Student")));
+
+        mock.expect_get_grades()
+            .returning(|_| Err(DBError::UserNotFound));
+
+        let res = _get_grades(1, &mock);
+
+        assert_eq!(Ok(Vec::new()), res);
+    }
+
+    #[test]
+    fn test_get_grade_with_student_with_grades() {
+        let mut mock = MockPostgrSQLUserRepository::new();
+
+        let passwd = utils::hash("password");
+        mock.expect_get_user_by_id()
+            .returning(move |_| Ok(User::new("bob", &passwd, "Student")));
+
+        mock.expect_get_grades().returning(|_| {
+            Ok(vec![
+                Grade {
+                    id: 1,
+                    grade: 4.5,
+                    student_id: 1,
+                },
+                Grade {
+                    id: 2,
+                    grade: 5.1,
+                    student_id: 1,
+                },
+            ])
+        });
+
+        let res = _get_grades(1, &mock);
+
+        assert_eq!(
+            Ok(vec![
+                Grade {
+                    id: 1,
+                    grade: 4.5,
+                    student_id: 1,
+                },
+                Grade {
+                    id: 2,
+                    grade: 5.1,
+                    student_id: 1,
+                },
+            ]),
+            res
+        );
+    }
+}

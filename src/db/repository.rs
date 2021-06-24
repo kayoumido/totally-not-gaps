@@ -7,6 +7,9 @@ use crate::errors::DBError;
 
 use diesel::prelude::*;
 
+#[cfg(test)]
+use mockall::{automock, predicate::*};
+
 pub trait UserRepository {
     /// Try and get a user from the storage
     /// if the wanted user doesn't exist, an error is returned
@@ -36,9 +39,6 @@ pub trait UserRepository {
 }
 
 pub struct PostgrSQLUserRepository {}
-
-#[cfg(test)]
-use mockall::{automock, predicate::*};
 
 #[cfg_attr(test, automock)]
 /// Implementation of the `UserRepository` with PostgreSQL as a storage
@@ -93,6 +93,7 @@ pub trait GradeRepository {
 
 pub struct PostgrSQLGradeRepository {}
 
+#[cfg_attr(test, automock)]
 impl GradeRepository for PostgrSQLGradeRepository {
     fn insert_grade(&self, user_id: i32, grade: f32) -> Result<(), DBError> {
         let conn = connection()?;
