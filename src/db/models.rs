@@ -1,11 +1,23 @@
 use super::schema::{grades, users};
 
-#[derive(Queryable, Debug)]
+#[derive(Queryable, Debug, PartialEq, Eq)]
 pub struct User {
     pub id: i32,
     pub username: String,
     pub password: String,
     pub role: String,
+}
+
+impl User {
+    /// Only exists for the unit tests
+    pub fn new(username: &str, passwd: &str, role: &str) -> Self {
+        Self {
+            id: 1,
+            username: username.to_string(),
+            password: passwd.to_string(),
+            role: role.to_string(),
+        }
+    }
 }
 
 #[derive(Queryable, Debug, Associations)]

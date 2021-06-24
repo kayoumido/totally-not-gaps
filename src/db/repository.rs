@@ -37,6 +37,10 @@ pub trait UserRepository {
 
 pub struct PostgrSQLUserRepository {}
 
+#[cfg(test)]
+use mockall::{automock, predicate::*};
+
+#[cfg_attr(test, automock)]
 /// Implementation of the `UserRepository` with PostgreSQL as a storage
 impl UserRepository for PostgrSQLUserRepository {
     fn get_user(&self, usrname: &str) -> Result<User, DBError> {
