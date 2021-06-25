@@ -1,11 +1,20 @@
 # Totally Not Gaps (alias: KING)
+> Auteurs: Bastien Potet & Doran Kayoumi
 
 ## Lancement
+La première chose à faire est de définir la configuration de la base de données dans un fichier `.env`. Vous pouvez simplement utiliser le fichier d'exemple que nous avons mis à disposition. Celui-ci contient déjà la configuration pour fonctionner avec le container Docker contenant la base de données.
+```bash
+$ cp .env.example .env
+```
 
+Maintenant que la configuration de la base de données est faites, vous pouvez démarrer la base de données ainsi que `Totally Not Gaps`.
+```bash
+$ docker-compose up -d
+$ cargo run
 ```
-docker-compose up -d
-cargo run
-```
+> Note: Si vous décidé de ne pas utiliser notre "infrastructure", nous avons mis a disposition un fichier SQL `setup.sql` pour créer les tables nécessaire au bon fonctionnement de l'application et d'insérer des données de test.
+> 
+> Note 2: Si vous utilisez une base de données autre que PostgreSQL, l'application risque de ne pas fonctionner, car nous avons configuré notre ORM pour utiliser PostgreSQL
 
 ## Changement effectués
 
@@ -26,10 +35,10 @@ modification et d'insertion de données.
 ### Système d'authentification
 
 Nous avons ajouté un système d'authentification qui a pour unique but de connecter l'utilisateur. Nous avons ajouté
-des validations d'I/O pour cela pour cela nous avons utilisé le package ```read_input``` qui nous aide notamment à éviter 
+des validations d'I/O pour cela pour cela nous avons utilisé le crate ```read_input``` qui nous aide notamment à éviter 
 des problèmes de conversion, puisque celui-ci va refuser une chaîne de caractères, si nous attendons un nombre 
 flottant. Pour éviter qu'un méchant pirate vienne dump notre base de données et puisse voir les mots de passe des
-élèves et des enseignants, nous avons donc hashé les mots de passe et avons utilisé le package ```sodiumoxyde``` et 
+élèves et des enseignants, nous avons donc hashé les mots de passe avec `argon2id` du crate `sodiumoxide`.
 
 
 ### Système d'autorisation
@@ -47,13 +56,14 @@ Il serait ainsi possible à l'avenir d'ajouter de nouveaux rôles, comme l'admin
 ### Logging
 
 Dans le but de suivre le déroulement de notre logiciel, nous avons ajouté du logging à notre programme. Nous avons
-utilisé le package ```simple_logger``` pour pouvoir afficher les logs dans le programme.
+utilisé le package ```simple_logger``` pour pouvoir afficher les logs dans le programme. Pour le placement de nos logs, nous avons décidé de les placer la ou nous pourrions afficher le plus d'information (i.e. essayé de répondre aux questions `When, What, Where, Who ?`). Par exemple, si une erreur surviens lors de l'insertion du note, nous avons placé un log 
+dans la fonction `enter_grade` car l'on peut afficher l'enseignant ayant voulu insérer une nouvelle note, l'élève à qui la note a été attribué ainsi que la note. Un autre emplacement aurai de placer le log dans la fonction du repository qui insére l'entrée dans la base de données, mais il nous manquerair l'information de quel utilisateur a effectué la demande d'insertion.
 
 ### Tests
 
-Pour vérifier le bon fonctionnement de notre logiciel, nous avons utilisé le package ```rstest``` qui facilite grandement
-le testing. Nous avons également mock notre base de données pour vérifier le stockage et le bon fonctionnement des
-insertions dans la base de données.
+Pour vérifier le bon fonctionnement de notre logiciel, nous avons utilisé le crate ```rstest``` qui facilite grandement
+le testing. Nous avons également utilisé le crate `mockall` afin de mock notre base de données pour que l'on puisse tester le bon fonctionnement de la récupération et des
+insertions des données dans la base de données.
 
 ### Possible amélioration
 
