@@ -59,6 +59,9 @@ Dans le but de suivre le déroulement de notre logiciel, nous avons ajouté du l
 utilisé le package ```simple_logger``` pour pouvoir afficher les logs dans le programme. Pour le placement de nos logs, nous avons décidé de les placer la ou nous pourrions afficher le plus d'information (i.e. essayé de répondre aux questions `When, What, Where, Who ?`). Par exemple, si une erreur surviens lors de l'insertion du note, nous avons placé un log 
 dans la fonction `enter_grade` car l'on peut afficher l'enseignant ayant voulu insérer une nouvelle note, l'élève à qui la note a été attribué ainsi que la note. Un autre emplacement aurai de placer le log dans la fonction du repository qui insére l'entrée dans la base de données, mais il nous manquerair l'information de quel utilisateur a effectué la demande d'insertion.
 
+Pour nos logs, en plus de la date et heure (ajouté automatiquement par le crate que nous utilisons), nous avons aussi ajouté le nom de la fonction qui à généré l'erreur.
+e.g. `main (see_grades) - Alice tried to acces grades of a non-existing student or a teacher (Bob)`
+
 ### Tests
 
 Pour vérifier le bon fonctionnement de notre logiciel, nous avons utilisé le crate ```rstest``` qui facilite grandement
