@@ -199,6 +199,7 @@ pub fn login() -> User {
 
 /**
  * Available users:
+ *
  * Username: doran
  * Password: guinessIsBetter
  * Role: Student
